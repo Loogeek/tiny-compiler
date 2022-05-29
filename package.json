@@ -1,0 +1,11 @@
+{
+  "name": "tiny-compiler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "Long Xiao",
+  "license": "MIT"
+}
