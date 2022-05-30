@@ -1,8 +1,15 @@
-const { tokenizer, parser } = require("./index");
+const {
+  tokenizer,
+  parser,
+  transformer,
+  traverser,
+  codeGenerator,
+} = require("./index");
 const assert = require("assert");
 
 // const tokens = tokenizer("(add 2 (subtract 4 2))");
 const input = "(add 2 (subtract 4 2))";
+const output = "add(2, subtract(4, 2));";
 
 const tokens = [
   { type: "paren", value: "(" },
@@ -46,6 +53,45 @@ const ast = {
   ],
 };
 
+const newAst = {
+  type: "Program",
+  body: [
+    {
+      type: "ExpressionStatement",
+      expression: {
+        type: "CallExpression",
+        callee: {
+          type: "Identifier",
+          name: "add",
+        },
+        arguments: [
+          {
+            type: "NumberLiteral",
+            value: "2",
+          },
+          {
+            type: "CallExpression",
+            callee: {
+              type: "Identifier",
+              name: "subtract",
+            },
+            arguments: [
+              {
+                type: "NumberLiteral",
+                value: "4",
+              },
+              {
+                type: "NumberLiteral",
+                value: "2",
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+};
+
 assert.deepStrictEqual(
   tokenizer(input),
   tokens,
@@ -56,6 +102,18 @@ assert.deepStrictEqual(
   parser(tokens),
   ast,
   "Parser should turn `tokens` array into `ast`"
+);
+
+assert.deepStrictEqual(
+  transformer(ast),
+  newAst,
+  "Transformer should turn `ast` into a `newAst`"
+);
+
+assert.deepStrictEqual(
+  codeGenerator(newAst),
+  output,
+  "Code Generator should turn `newAst` into `output` string"
 );
 
 console.log("All Passed!");

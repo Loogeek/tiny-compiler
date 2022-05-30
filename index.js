@@ -207,7 +207,134 @@ function parser(tokens) {
   return ast;
 }
 
+function traverser(ast, visitor) {
+  function traverseArray(arr, parent) {
+    arr.forEach((child) => traverseNode(child, parent));
+  }
+
+  function traverseNode(node, parent) {
+    const method = visitor[node.type];
+
+    if (method && method.entry) {
+      method.entry(node, parent);
+    }
+
+    switch (node.type) {
+      case "Program":
+        traverseArray(node.body, node);
+        break;
+
+      case "CallExpression":
+        traverseArray(node.params, node);
+        break;
+
+      case "NumberLiteral":
+      case "StringLiteral":
+        break;
+
+      default:
+        throw new TypeError(node.type);
+    }
+
+    if (method && method.exit) {
+      method.exit(node, parent);
+    }
+  }
+
+  traverseNode(ast, null);
+}
+
+const visitor = {
+  NumberLiteral: {
+    entry(node, parent) {
+      parent._context.push({
+        type: "NumberLiteral",
+        value: node.value,
+      });
+    },
+  },
+
+  StringLiteral: {
+    entry(node, parent) {
+      parent._context.push({
+        type: "StringLiteral",
+        value: node.value,
+      });
+    },
+  },
+
+  CallExpression: {
+    entry(node, parent) {
+      let expression = {
+        type: "CallExpression",
+        callee: {
+          type: "Identifier",
+          name: node.name,
+        },
+        arguments: [],
+      };
+
+      node._context = expression.arguments;
+
+      if (parent.type !== "CallExpression") {
+        expression = {
+          type: "ExpressionStatement",
+          expression,
+        };
+      }
+
+      parent._context.push(expression);
+    },
+  },
+};
+
+function transformer(ast) {
+  const newAst = {
+    type: "Program",
+    body: [],
+  };
+
+  ast._context = newAst.body;
+
+  traverser(ast, visitor);
+
+  return newAst;
+}
+
+function codeGenerator(ast) {
+  switch (ast.type) {
+    case "Program":
+      return ast.body.map(codeGenerator).join("\n");
+
+    case "ExpressionStatement":
+      return codeGenerator(ast.expression) + ";";
+
+    case "CallExpression":
+      return (
+        codeGenerator(ast.callee) +
+        "(" +
+        ast.arguments.map(codeGenerator).join(", ") +
+        ")"
+      );
+
+    case "Identifier":
+      return ast.name;
+
+    case "NumberLiteral":
+      return ast.value;
+
+    case "StringLiteral":
+      return '"' + ast.value + '"';
+
+    default:
+      throw TypeError(ast.type);
+  }
+}
+
 module.exports = {
   tokenizer,
   parser,
+  transformer,
+  traverser,
+  codeGenerator,
 };
