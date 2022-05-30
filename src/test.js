@@ -2,8 +2,8 @@ const {
   tokenizer,
   parser,
   transformer,
-  traverser,
   codeGenerator,
+  compiler,
 } = require("./index");
 const assert = require("assert");
 
@@ -114,6 +114,12 @@ assert.deepStrictEqual(
   codeGenerator(newAst),
   output,
   "Code Generator should turn `newAst` into `output` string"
+);
+
+assert.deepStrictEqual(
+  compiler(input),
+  output,
+  "Compiler should turn `input` into `output`"
 );
 
 console.log("All Passed!");
